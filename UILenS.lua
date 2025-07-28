@@ -7,31 +7,33 @@ local RunService = game:GetService("RunService")
 
 -- Configuration
 local MAIN_GUI_NAME = "UILenS"
-local LOGO_IMAGE_ID = "rbxassetid://120107164785260" -- Fixed image id format
+local LOGO_IMAGE_ID = "rbxassetid://120107164785260"
 local MONITOR_ENABLED = false
 local CORE_GUI_MONITORING = false
 local MAX_CONSOLE_MESSAGES = 100
-local MESSAGE_COUNTER = 0 -- For unique message IDs
 
 -- Create GUI for all players
 local function createMonitorGui(player)
-    -- Create main ScreenGui with ForceGuiOnTopOfCore enabled for better persistence
+    -- Create main ScreenGui
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = MAIN_GUI_NAME
-    screenGui.ResetOnSpawn = false -- Ensure GUI persists after character respawn
+    screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.DisplayOrder = 999 -- Make it appear above most GUIs
-    screenGui.IgnoreGuiInset = true -- Make it go edge to edge
+    screenGui.DisplayOrder = 999
+    screenGui.IgnoreGuiInset = true
     
-    -- Set parent based on if we're in-game or in Studio
-    if RunService:IsRunning() then
+    -- Set parent based on context (in-game or Studio)
+    if RunService:IsRunning() and player then
         -- In-game: Assign to PlayerGui
-        screenGui.Parent = player.PlayerGui
+        screenGui.Parent = player:WaitForChild("PlayerGui", 5)
     else
-        -- In Studio: Try to use StarterGui
-        pcall(function()
-            screenGui.Parent = game:GetService("StarterGui")
-        end)
+        -- In Studio: Use CoreGui for testing (Studio-only)
+        screenGui.Parent = game:GetService("CoreGui")
+    end
+    
+    if not screenGui.Parent then
+        warn("Failed to set ScreenGui parent for player: " .. (player and player.Name or "Unknown"))
+        return nil
     end
     
     -- Main frame
@@ -47,7 +49,6 @@ local function createMonitorGui(player)
     local topBar = Instance.new("Frame")
     topBar.Name = "TopBar"
     topBar.Size = UDim2.new(1, 0, 0.07, 0)
-    topBar.Position = UDim2.new(0, 0, 0, 0)
     topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     topBar.BorderSizePixel = 0
     topBar.Parent = mainFrame
@@ -100,10 +101,10 @@ local function createMonitorGui(player)
     minimizeButton.TextSize = 18
     minimizeButton.Parent = topBar
     
-    -- Console area - reduced height a bit
+    -- Console area
     local consoleFrame = Instance.new("Frame")
     consoleFrame.Name = "ConsoleFrame"
-    consoleFrame.Size = UDim2.new(0.98, 0, 0.7, 0) -- Smaller console
+    consoleFrame.Size = UDim2.new(0.98, 0, 0.7, 0)
     consoleFrame.Position = UDim2.new(0.01, 0, 0.08, 0)
     consoleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     consoleFrame.BorderSizePixel = 0
@@ -145,11 +146,11 @@ local function createMonitorGui(player)
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
     listLayout.Parent = consoleScrollFrame
     
-    -- Controls area - adjusted position for smaller console
+    -- Controls area
     local controlsFrame = Instance.new("Frame")
     controlsFrame.Name = "ControlsFrame"
-    controlsFrame.Size = UDim2.new(0.98, 0, 0.20, 0) -- Increased size for better controls layout
-    controlsFrame.Position = UDim2.new(0.01, 0, 0.78, 0) -- Adjusted position
+    controlsFrame.Size = UDim2.new(0.98, 0, 0.20, 0)
+    controlsFrame.Position = UDim2.new(0.01, 0, 0.78, 0)
     controlsFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     controlsFrame.BorderSizePixel = 0
     controlsFrame.Parent = mainFrame
@@ -177,6 +178,7 @@ local function createMonitorGui(player)
     clearButton.Font = Enum.Font.GothamBold
     clearButton.Text = "Clear"
     clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Rupert
     clearButton.TextSize = 14
     clearButton.Parent = controlsFrame
     
@@ -193,30 +195,28 @@ local function createMonitorGui(player)
     coreGuiLabel.TextXAlignment = Enum.TextXAlignment.Left
     coreGuiLabel.Parent = controlsFrame
     
-    -- Improved Toggle Slider Background
+    -- Toggle Slider Background
     local sliderBackground = Instance.new("Frame")
     sliderBackground.Name = "SliderBackground"
-    sliderBackground.Size = UDim2.new(0.12, 0, 0.25, 0) -- Wider slider
-    sliderBackground.Position = UDim2.new(0.43, 0, 0.6, 0)
+    sliderBackground.Size = UDim2.new(0.12, 0, 0.25, 0)
+    sliderBackground.Position = UDim2.new(-r 0.43, 0, 0.6, 0)
     sliderBackground.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     sliderBackground.BorderSizePixel = 0
     sliderBackground.Parent = controlsFrame
     
-    -- Make corners rounded
     local sliderCorners = Instance.new("UICorner")
-    sliderCorners.CornerRadius = UDim.new(0.5, 0)
+    sliderCorners.CornerRadius = UDim.0, 0.5)
     sliderCorners.Parent = sliderBackground
     
-    -- Improved Toggle Slider Button
+    -- Toggle Slider Button
     local sliderButton = Instance.new("Frame")
     sliderButton.Name = "SliderButton"
-    sliderButton.Size = UDim2.new(0.4, 0, 0.8, 0) -- Slightly smaller for better appearance
+    sliderButton.Size = UDim2.new(0.4, 0, 0.8, 0)
     sliderButton.Position = UDim2.new(0.05, 0, 0.1, 0)
     sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     sliderButton.BorderSizePixel = 0
     sliderButton.Parent = sliderBackground
     
-    -- Make slider button rounded
     local buttonCorners = Instance.new("UICorner")
     buttonCorners.CornerRadius = UDim.new(0.5, 0)
     buttonCorners.Parent = sliderButton
@@ -244,11 +244,11 @@ local function createMonitorGui(player)
         end
     end)
     
-    -- Create confirmation modal (fullscreen)
+    -- Create confirmation modal
     local modalBackground = Instance.new("Frame")
     modalBackground.Name = "ConfirmationModal"
-    modalBackground.Size = UDim2.new(10, 0, 10, 0) -- Extra large to ensure full coverage
-    modalBackground.Position = UDim2.new(-5, 0, -5, 0) -- Position to cover everything
+    modalBackground.Size = UDim2.new(10, 0, 10, 0)
+    modalBackground.Position = UDim2.new(-5, 0, -5, 0)
     modalBackground.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     modalBackground.BackgroundTransparency = 0.5
     modalBackground.BorderSizePixel = 0
@@ -276,10 +276,6 @@ local function createMonitorGui(player)
     modalTitle.BackgroundTransparency = 1
     modalTitle.Font = Enum.Font.GothamBold
     modalTitle.Text = "Are you sure you want to close?"
-    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    modalTitle.TextSize = 18
-    modalTitle.ZIndex = 11
-    modalTitle.Parent = modalFrame you want to close?"
     modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     modalTitle.TextSize = 18
     modalTitle.ZIndex = 11
@@ -311,7 +307,6 @@ local function createMonitorGui(player)
     confirmButton.ZIndex = 11
     confirmButton.Parent = modalFrame
     
-    -- Add rounded corners to buttons
     local cancelCorners = Instance.new("UICorner")
     cancelCorners.CornerRadius = UDim.new(0.1, 0)
     cancelCorners.Parent = cancelButton
@@ -336,11 +331,9 @@ local function createMonitorGui(player)
     
     minimizeButton.MouseButton1Click:Connect(function()
         if mainFrame.Size.Y.Scale > 0.1 then
-            -- Store the original size for when we maximize
             mainFrame:SetAttribute("OriginalSizeY", mainFrame.Size.Y.Scale)
             mainFrame:SetAttribute("OriginalSizeX", mainFrame.Size.X.Scale)
             
-            -- Minimize
             local minimizeTween = TweenService:Create(
                 mainFrame,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
@@ -348,7 +341,6 @@ local function createMonitorGui(player)
             )
             minimizeTween:Play()
             
-            -- Hide all frames except TopBar
             for _, child in pairs(mainFrame:GetChildren()) do
                 if child.Name ~= "TopBar" then
                     child.Visible = false
@@ -357,20 +349,18 @@ local function createMonitorGui(player)
             
             minimizeButton.Text = "+"
         else
-            -- Maximize
             local maximizeTween = TweenService:Create(
                 mainFrame,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
                 {Size = UDim2.new(
-                    mainFrame:GetAttribute("OriginalSizeX") or 0.6, 
-                    0, 
-                    mainFrame:GetAttribute("OriginalSizeY") or 0.7, 
+                    mainFrame:GetAttribute("OriginalSizeX") or 0.6,
+                    0,
+                    mainFrame:GetAttribute("OriginalSizeY") or 0.7,
                     0
                 )}
             )
             maximizeTween:Play()
             
-            -- Show all frames
             for _, child in pairs(mainFrame:GetChildren()) do
                 child.Visible = true
             end
@@ -403,7 +393,6 @@ local function createMonitorGui(player)
         end
     end)
     
-    -- Make the slider clickable
     local function updateSliderAppearance()
         if CORE_GUI_MONITORING then
             sliderBackground.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
@@ -444,7 +433,7 @@ local function getElementPath(element)
     local current = element
     
     while current and current ~= game do
-        local elementType = current.ClassName 
+        local elementType = current.ClassName
         local elementName = current.Name
         
         table.insert(path, 1, elementName .. "(" .. elementType .. ")")
@@ -456,14 +445,15 @@ end
 
 -- Add message to console
 local function addConsoleMessage(player, message, messageType)
-    local guiData = player:GetAttribute("UILenS_GuiData")
-    if not guiData then return end
+    if not player or not player.PlayerGui then return end
     
-    local consoleScrollFrame = player.PlayerGui:FindFirstChild(MAIN_GUI_NAME).MainFrame.ConsoleFrame.ConsoleScrollFrame
+    local consoleScrollFrame = player.PlayerGui:FindFirstChild(MAIN_GUI_NAME)
+    if not consoleScrollFrame then return end
+    consoleScrollFrame = consoleScrollFrame.MainFrame.ConsoleFrame.ConsoleScrollFrame
     
     local messageLabel = Instance.new("TextLabel")
     messageLabel.Name = "Message_" .. os.time() .. "_" .. math.random(1000, 9999)
-    messageLabel.Size = UDim2.new(0.98, 0, 0, 40) -- Auto height
+    messageLabel.Size = UDim2.new(0.98, 0, 0, 40)
     messageLabel.AutomaticSize = Enum.AutomaticSize.Y
     messageLabel.BackgroundColor3 = 
         messageType == "click" and Color3.fromRGB(20, 40, 60) or
@@ -482,7 +472,6 @@ local function addConsoleMessage(player, message, messageType)
     messageLabel.TextYAlignment = Enum.TextYAlignment.Top
     messageLabel.LayoutOrder = os.time()
     
-    -- Padding within the message
     local padding = Instance.new("UIPadding")
     padding.PaddingLeft = UDim.new(0, 10)
     padding.PaddingRight = UDim.new(0, 10)
@@ -492,7 +481,6 @@ local function addConsoleMessage(player, message, messageType)
     
     messageLabel.Parent = consoleScrollFrame
     
-    -- Limit the number of messages
     local messages = {}
     for _, child in pairs(consoleScrollFrame:GetChildren()) do
         if child:IsA("TextLabel") then
@@ -500,32 +488,27 @@ local function addConsoleMessage(player, message, messageType)
         end
     end
     
-    -- Sort by LayoutOrder (timestamp)
     table.sort(messages, function(a, b)
         return a.LayoutOrder > b.LayoutOrder
     end)
     
-    -- Remove excess messages
     if #messages > MAX_CONSOLE_MESSAGES then
         for i = MAX_CONSOLE_MESSAGES + 1, #messages do
             messages[i]:Destroy()
         end
     end
     
-    -- Scroll to bottom
     consoleScrollFrame.CanvasPosition = Vector2.new(0, 999999)
 end
 
 -- Check if an element should be ignored
 local function shouldIgnoreElement(element)
-    -- List of system GUI elements to ignore
     local ignoredNames = {
         "promptOverlay", "RobloxPromptGui", "OldMenuFrame", "MenuFrame",
         "LoadingScreen", "PerformanceStats", "TopBar", "ChatBar",
         "ToolTip", "PlayerListContainer", "ErrorPrompt"
     }
     
-    -- Check if element or any parent is in the ignore list
     local current = element
     while current and current ~= game do
         for _, name in pairs(ignoredNames) do
@@ -534,7 +517,6 @@ local function shouldIgnoreElement(element)
             end
         end
         
-        -- Skip CoreGui elements unless explicitly enabled
         if not CORE_GUI_MONITORING and current.Parent and current.Parent:IsA("CoreGui") then
             return true
         end
@@ -547,28 +529,25 @@ end
 
 -- Function to set up click monitoring for a player
 local function setupClickMonitoring(player)
+    if not player or not player.PlayerGui then return end
+    
     local guiObjects = {}
-    local playerGui = player:WaitForChild("PlayerGui")
+    local playerGui = player:WaitForChild("PlayerGui", 5)
     
-    -- Create custom GUI
     local guiData = createMonitorGui(player)
-    player:SetAttribute("UILenS_GuiData", true)
+    if not guiData then return end
     
-    -- Add welcome message
     addConsoleMessage(player, "Welcome to UILenS - GUI Path Monitor", "info")
     addConsoleMessage(player, "Click the 'Start Monitoring GUI Path' button to begin tracking GUI interactions", "info")
     
-    -- Function to handle gui elements
     local function handleGuiObject(guiObject)
         if not guiObject:IsA("GuiObject") or shouldIgnoreElement(guiObject) then
             return
         end
         
-        -- Only track if not already tracked
         if not guiObjects[guiObject] then
             guiObjects[guiObject] = true
             
-            -- Connect click event
             guiObject.InputBegan:Connect(function(input)
                 if not MONITOR_ENABLED then return end
                 
@@ -589,7 +568,6 @@ local function setupClickMonitoring(player)
         end
     end
     
-    -- Function to process descendant addition
     local function processDescendantAdded(descendant)
         task.spawn(function()
             if descendant:IsA("GuiObject") then
@@ -598,25 +576,21 @@ local function setupClickMonitoring(player)
         end)
     end
     
-    -- Process existing PlayerGui
     for _, descendant in pairs(playerGui:GetDescendants()) do
         task.spawn(function()
             processDescendantAdded(descendant)
         end)
     end
     
-    -- Setup to track future GUI elements
     playerGui.DescendantAdded:Connect(processDescendantAdded)
     
-    -- Also monitor CoreGui if enabled
-    game:GetService("CoreGui").DescendantAdded:Connect(function(descendant)
-        if CORE_GUI_MONITORING and MONITOR_ENABLED then
-            processDescendantAdded(descendant)
-        end
-    end)
-    
-    -- Process existing CoreGui elements
     if CORE_GUI_MONITORING then
+        game:GetService("CoreGui").DescendantAdded:Connect(function(descendant)
+            if CORE_GUI_MONITORING and MONITOR_ENABLED then
+                processDescendantAdded(descendant)
+            end
+        end)
+        
         for _, descendant in pairs(game:GetService("CoreGui"):GetDescendants()) do
             task.spawn(function()
                 processDescendantAdded(descendant)
@@ -627,14 +601,12 @@ end
 
 -- Main initialization
 local function initialize()
-    -- Set up for existing players
     for _, player in pairs(Players:GetPlayers()) do
         task.spawn(function()
             setupClickMonitoring(player)
         end)
     end
     
-    -- Set up for future players
     Players.PlayerAdded:Connect(function(player)
         task.spawn(function()
             setupClickMonitoring(player)
