@@ -24,10 +24,8 @@ local function createMonitorGui(player)
     
     -- Set parent based on context (in-game or Studio)
     if RunService:IsRunning() and player then
-        -- In-game: Assign to PlayerGui
         screenGui.Parent = player:WaitForChild("PlayerGui", 5)
     else
-        -- In Studio: Use CoreGui for testing (Studio-only)
         screenGui.Parent = game:GetService("CoreGui")
     end
     
@@ -178,7 +176,6 @@ local function createMonitorGui(player)
     clearButton.Font = Enum.Font.GothamBold
     clearButton.Text = "Clear"
     clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Rupert
     clearButton.TextSize = 14
     clearButton.Parent = controlsFrame
     
@@ -199,13 +196,13 @@ local function createMonitorGui(player)
     local sliderBackground = Instance.new("Frame")
     sliderBackground.Name = "SliderBackground"
     sliderBackground.Size = UDim2.new(0.12, 0, 0.25, 0)
-    sliderBackground.Position = UDim2.new(-r 0.43, 0, 0.6, 0)
+    sliderBackground.Position = UDim2.new(0.43, 0, 0.6, 0)
     sliderBackground.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     sliderBackground.BorderSizePixel = 0
     sliderBackground.Parent = controlsFrame
     
     local sliderCorners = Instance.new("UICorner")
-    sliderCorners.CornerRadius = UDim.0, 0.5)
+    sliderCorners.CornerRadius = UDim.new(0.5, 0)
     sliderCorners.Parent = sliderBackground
     
     -- Toggle Slider Button
@@ -584,13 +581,13 @@ local function setupClickMonitoring(player)
     
     playerGui.DescendantAdded:Connect(processDescendantAdded)
     
+    game:GetService("CoreGui").DescendantAdded:Connect(function(descendant)
+        if CORE_GUI_MONITORING and MONITOR_ENABLED then
+            processDescendantAdded(descendant)
+        end
+    end)
+    
     if CORE_GUI_MONITORING then
-        game:GetService("CoreGui").DescendantAdded:Connect(function(descendant)
-            if CORE_GUI_MONITORING and MONITOR_ENABLED then
-                processDescendantAdded(descendant)
-            end
-        end)
-        
         for _, descendant in pairs(game:GetService("CoreGui"):GetDescendants()) do
             task.spawn(function()
                 processDescendantAdded(descendant)
