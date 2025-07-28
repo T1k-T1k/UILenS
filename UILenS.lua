@@ -1,4 +1,4 @@
--- UILenS - GUI Path Monitor for Roblox Studio
+-- UILenS - GUI Path Monitor for Roblox
 -- Place this script in ServerScriptService or StarterPlayerScripts for better persistence
 
 local Players = game:GetService("Players")
