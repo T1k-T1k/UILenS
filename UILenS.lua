@@ -1,20 +1,26 @@
--- UILenS - GUI Path Monitor for Roblox
+-- UILenS - Premium GUI Path Monitor for Roblox
+-- Enhanced UI Version
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 -- Configuration
-local MAIN_GUI_NAME = "UILenS"
+local MAIN_GUI_NAME = "UILenS_Premium"
 local LOGO_IMAGE_ID = "rbxassetid://120107164785260"
 local MONITOR_ENABLED = false
 local CORE_GUI_MONITORING = false
 local MAX_CONSOLE_MESSAGES = 100
+local ACCENT_COLOR = Color3.fromRGB(0, 170, 255)
+local DARK_BG = Color3.fromRGB(20, 20, 25)
+local LIGHT_BG = Color3.fromRGB(30, 30, 35)
+local TEXT_COLOR = Color3.fromRGB(240, 240, 240)
 
 -- Create GUI for all players
 local function createMonitorGui(player)
-    -- Create main ScreenGui
+    -- Create main ScreenGui with touch support
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = MAIN_GUI_NAME
     screenGui.ResetOnSpawn = false
@@ -22,7 +28,7 @@ local function createMonitorGui(player)
     screenGui.DisplayOrder = 999
     screenGui.IgnoreGuiInset = true
     
-    -- Set parent based on context (in-game or Studio)
+    -- Set parent based on context
     if RunService:IsRunning() and player then
         screenGui.Parent = player:WaitForChild("PlayerGui", 5)
     else
@@ -34,220 +40,441 @@ local function createMonitorGui(player)
         return nil
     end
     
-    -- Main frame
+    -- Main container with shadow
+    local mainContainer = Instance.new("Frame")
+    mainContainer.Name = "MainContainer"
+    mainContainer.Size = UDim2.new(0.6, 0, 0.7, 0)
+    mainContainer.Position = UDim2.new(0.2, 0, 0.15, 0)
+    mainContainer.BackgroundTransparency = 1
+    mainContainer.ClipsDescendants = true
+    mainContainer.Parent = screenGui
+    
+    -- Shadow effect
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "Shadow"
+    shadow.Size = UDim2.new(1, 10, 1, 10)
+    shadow.Position = UDim2.new(0, -5, 0, -5)
+    shadow.Image = "rbxassetid://1316045217"
+    shadow.ImageColor3 = Color3.new(0, 0, 0)
+    shadow.ImageTransparency = 0.8
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+    shadow.BackgroundTransparency = 1
+    shadow.ZIndex = 0
+    shadow.Parent = mainContainer
+    
+    -- Main frame with rounded corners
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0.6, 0, 0.7, 0)
-    mainFrame.Position = UDim2.new(0.2, 0, 0.15, 0)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    mainFrame.Size = UDim2.new(1, 0, 1, 0)
+    mainFrame.BackgroundColor3 = DARK_BG
     mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = screenGui
+    mainFrame.ZIndex = 1
+    mainFrame.Parent = mainContainer
     
-    -- Top bar
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 8)
+    mainCorner.Parent = mainFrame
+    
+    -- Top bar with gradient
     local topBar = Instance.new("Frame")
     topBar.Name = "TopBar"
-    topBar.Size = UDim2.new(1, 0, 0.07, 0)
-    topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    topBar.Size = UDim2.new(1, 0, 0.08, 0)
+    topBar.BackgroundColor3 = LIGHT_BG
     topBar.BorderSizePixel = 0
+    topBar.ZIndex = 2
     topBar.Parent = mainFrame
     
-    -- Logo image
+    local topBarCorner = Instance.new("UICorner")
+    topBarCorner.CornerRadius = UDim.new(0, 8)
+    topBarCorner.Parent = topBar
+    
+    -- Gradient effect
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, ACCENT_COLOR),
+        ColorSequenceKeypoint.new(0.1, ACCENT_COLOR),
+        ColorSequenceKeypoint.new(1, Color3.new(0, 0, 0))
+    }
+    gradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 0.8),
+        NumberSequenceKeypoint.new(0.1, 0.8),
+        NumberSequenceKeypoint.new(1, 1)
+    }
+    gradient.Rotation = 90
+    gradient.Parent = topBar
+    
+    -- Logo and title container
+    local titleContainer = Instance.new("Frame")
+    titleContainer.Name = "TitleContainer"
+    titleContainer.Size = UDim2.new(0.6, 0, 1, 0)
+    titleContainer.Position = UDim2.new(0.02, 0, 0, 0)
+    titleContainer.BackgroundTransparency = 1
+    titleContainer.ZIndex = 3
+    titleContainer.Parent = topBar
+    
+    -- Logo image with subtle shine
     local logoImage = Instance.new("ImageLabel")
     logoImage.Name = "Logo"
-    logoImage.Size = UDim2.new(0, 150, 0, 30)
-    logoImage.Position = UDim2.new(0.01, 0, 0.1, 0)
+    logoImage.Size = UDim2.new(0, 32, 0, 32)
+    logoImage.Position = UDim2.new(0, 0, 0.5, -16)
     logoImage.BackgroundTransparency = 1
     logoImage.Image = LOGO_IMAGE_ID
     logoImage.ScaleType = Enum.ScaleType.Fit
-    logoImage.Parent = topBar
+    logoImage.ZIndex = 3
+    logoImage.Parent = titleContainer
     
-    -- Title label
+    -- Title label with subtle glow
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(0.5, 0, 1, 0)
-    titleLabel.Position = UDim2.new(0.25, 0, 0, 0)
+    titleLabel.Size = UDim2.new(0.8, 0, 1, 0)
+    titleLabel.Position = UDim2.new(0, 40, 0, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.Text = "UILenS"
-    titleLabel.TextColor3 = Color3.fromRGB(41, 128, 255)
-    titleLabel.TextSize = 22
-    titleLabel.Parent = topBar
+    titleLabel.TextColor3 = TEXT_COLOR
+    titleLabel.TextSize = 18
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.ZIndex = 3
+    titleLabel.Parent = titleContainer
     
-    -- Close button
-    local closeButton = Instance.new("TextButton")
-    closeButton.Name = "CloseButton"
-    closeButton.Size = UDim2.new(0.05, 0, 0.8, 0)
-    closeButton.Position = UDim2.new(0.94, 0, 0.1, 0)
-    closeButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-    closeButton.BorderSizePixel = 0
-    closeButton.Font = Enum.Font.GothamBold
-    closeButton.Text = "X"
-    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeButton.TextSize = 18
-    closeButton.Parent = topBar
+    local titleStroke = Instance.new("UIStroke")
+    titleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    titleStroke.Color = Color3.new(1, 1, 1)
+    titleStroke.Transparency = 0.8
+    titleStroke.Thickness = 1
+    titleStroke.Parent = titleLabel
     
-    -- Minimize button
-    local minimizeButton = Instance.new("TextButton")
+    -- Action buttons container
+    local actionButtons = Instance.new("Frame")
+    actionButtons.Name = "ActionButtons"
+    actionButtons.Size = UDim2.new(0.3, 0, 1, 0)
+    actionButtons.Position = UDim2.new(0.7, 0, 0, 0)
+    actionButtons.BackgroundTransparency = 1
+    actionButtons.ZIndex = 3
+    actionButtons.Parent = topBar
+    
+    -- Minimize button with icon
+    local minimizeButton = Instance.new("ImageButton")
     minimizeButton.Name = "MinimizeButton"
-    minimizeButton.Size = UDim2.new(0.05, 0, 0.8, 0)
-    minimizeButton.Position = UDim2.new(0.88, 0, 0.1, 0)
-    minimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    minimizeButton.BorderSizePixel = 0
-    minimizeButton.Font = Enum.Font.GothamBold
-    minimizeButton.Text = "-"
-    minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    minimizeButton.TextSize = 18
-    minimizeButton.Parent = topBar
+    minimizeButton.Size = UDim2.new(0, 24, 0, 24)
+    minimizeButton.Position = UDim2.new(0.5, -28, 0.5, -12)
+    minimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    minimizeButton.AutoButtonColor = false
+    minimizeButton.ZIndex = 4
+    minimizeButton.Image = "rbxassetid://3926305904"
+    minimizeButton.ImageRectOffset = Vector2.new(124, 204)
+    minimizeButton.ImageRectSize = Vector2.new(36, 36)
+    minimizeButton.ImageColor3 = TEXT_COLOR
+    minimizeButton.Parent = actionButtons
     
-    -- Console area
+    local minimizeCorner = Instance.new("UICorner")
+    minimizeCorner.CornerRadius = UDim.new(0, 4)
+    minimizeCorner.Parent = minimizeButton
+    
+    -- Close button with icon
+    local closeButton = Instance.new("ImageButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0, 24, 0, 24)
+    closeButton.Position = UDim2.new(0.5, 4, 0.5, -12)
+    closeButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+    closeButton.AutoButtonColor = false
+    closeButton.ZIndex = 4
+    closeButton.Image = "rbxassetid://3926305904"
+    closeButton.ImageRectOffset = Vector2.new(284, 4)
+    closeButton.ImageRectSize = Vector2.new(24, 24)
+    closeButton.ImageColor3 = TEXT_COLOR
+    closeButton.Parent = actionButtons
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 4)
+    closeCorner.Parent = closeButton
+    
+    -- Button hover effects
+    local function setupButtonHover(button, hoverColor)
+        local originalColor = button.BackgroundColor3
+        
+        button.MouseEnter:Connect(function()
+            local tween = TweenService:Create(
+                button,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = hoverColor}
+            )
+            tween:Play()
+        end)
+        
+        button.MouseLeave:Connect(function()
+            local tween = TweenService:Create(
+                button,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = originalColor}
+            )
+            tween:Play()
+        end)
+    end
+    
+    setupButtonHover(minimizeButton, Color3.fromRGB(80, 80, 90))
+    setupButtonHover(closeButton, Color3.fromRGB(220, 80, 80))
+    
+    -- Console area with subtle border
     local consoleFrame = Instance.new("Frame")
     consoleFrame.Name = "ConsoleFrame"
     consoleFrame.Size = UDim2.new(0.98, 0, 0.7, 0)
-    consoleFrame.Position = UDim2.new(0.01, 0, 0.08, 0)
-    consoleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    consoleFrame.Position = UDim2.new(0.01, 0, 0.09, 0)
+    consoleFrame.BackgroundColor3 = LIGHT_BG
     consoleFrame.BorderSizePixel = 0
+    consoleFrame.ZIndex = 2
     consoleFrame.Parent = mainFrame
     
-    -- Status label
+    local consoleCorner = Instance.new("UICorner")
+    consoleCorner.CornerRadius = UDim.new(0, 6)
+    consoleCorner.Parent = consoleFrame
+    
+    local consoleStroke = Instance.new("UIStroke")
+    consoleStroke.Color = Color3.fromRGB(60, 60, 70)
+    consoleStroke.Thickness = 1
+    consoleStroke.Parent = consoleFrame
+    
+    -- Status bar
+    local statusBar = Instance.new("Frame")
+    statusBar.Name = "StatusBar"
+    statusBar.Size = UDim2.new(1, 0, 0.06, 0)
+    statusBar.Position = UDim2.new(0, 0, 0, 0)
+    statusBar.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    statusBar.BorderSizePixel = 0
+    statusBar.ZIndex = 3
+    statusBar.Parent = consoleFrame
+    
+    local statusCorner = Instance.new("UICorner")
+    statusCorner.CornerRadius = UDim.new(0, 6)
+    statusCorner.Parent = statusBar
+    
+    -- Status label with indicator
+    local statusContainer = Instance.new("Frame")
+    statusContainer.Name = "StatusContainer"
+    statusContainer.Size = UDim2.new(0.5, 0, 1, 0)
+    statusContainer.Position = UDim2.new(0, 10, 0, 0)
+    statusContainer.BackgroundTransparency = 1
+    statusContainer.ZIndex = 4
+    statusContainer.Parent = statusBar
+    
+    local statusIndicator = Instance.new("Frame")
+    statusIndicator.Name = "StatusIndicator"
+    statusIndicator.Size = UDim2.new(0, 10, 0, 10)
+    statusIndicator.Position = UDim2.new(0, 0, 0.5, -5)
+    statusIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    statusIndicator.BorderSizePixel = 0
+    statusIndicator.ZIndex = 4
+    statusIndicator.Parent = statusContainer
+    
+    local indicatorCorner = Instance.new("UICorner")
+    indicatorCorner.CornerRadius = UDim.new(0.5, 0)
+    indicatorCorner.Parent = statusIndicator
+    
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Name = "StatusLabel"
-    statusLabel.Size = UDim2.new(0.98, 0, 0.07, 0)
-    statusLabel.Position = UDim2.new(0.01, 0, 0, 0)
-    statusLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    statusLabel.BorderSizePixel = 0
+    statusLabel.Size = UDim2.new(1, -20, 1, 0)
+    statusLabel.Position = UDim2.new(0, 15, 0, 0)
+    statusLabel.BackgroundTransparency = 1
     statusLabel.Font = Enum.Font.GothamMedium
     statusLabel.Text = "Monitoring: OFF"
-    statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    statusLabel.TextSize = 16
+    statusLabel.TextColor3 = TEXT_COLOR
+    statusLabel.TextSize = 14
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    statusLabel.TextWrapped = true
-    statusLabel.Parent = consoleFrame
+    statusLabel.ZIndex = 4
+    statusLabel.Parent = statusContainer
     
-    -- Console ScrollingFrame
+    -- Console ScrollingFrame with custom scrollbar
     local consoleScrollFrame = Instance.new("ScrollingFrame")
     consoleScrollFrame.Name = "ConsoleScrollFrame"
-    consoleScrollFrame.Size = UDim2.new(1, 0, 0.93, 0)
-    consoleScrollFrame.Position = UDim2.new(0, 0, 0.07, 0)
+    consoleScrollFrame.Size = UDim2.new(1, 0, 0.94, 0)
+    consoleScrollFrame.Position = UDim2.new(0, 0, 0.06, 0)
     consoleScrollFrame.BackgroundTransparency = 1
     consoleScrollFrame.BorderSizePixel = 0
+    consoleScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 110)
     consoleScrollFrame.ScrollBarThickness = 6
     consoleScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
     consoleScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     consoleScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    consoleScrollFrame.ZIndex = 2
     consoleScrollFrame.Parent = consoleFrame
+    
+    -- Custom scrollbar styling
+    consoleScrollFrame.ScrollBarImageTransparency = 0.5
+    consoleScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 160)
     
     -- UIListLayout for console messages
     local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = UDim.new(0, 2)
+    listLayout.Padding = UDim.new(0, 5)
     listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
     listLayout.VerticalAlignment = Enum.VerticalAlignment.Top
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
     listLayout.Parent = consoleScrollFrame
     
-    -- Controls area
+    -- Controls area with gradient border
     local controlsFrame = Instance.new("Frame")
     controlsFrame.Name = "ControlsFrame"
-    controlsFrame.Size = UDim2.new(0.98, 0, 0.20, 0)
-    controlsFrame.Position = UDim2.new(0.01, 0, 0.78, 0)
-    controlsFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    controlsFrame.Size = UDim2.new(0.98, 0, 0.19, 0)
+    controlsFrame.Position = UDim2.new(0.01, 0, 0.8, 0)
+    controlsFrame.BackgroundColor3 = LIGHT_BG
     controlsFrame.BorderSizePixel = 0
+    controlsFrame.ZIndex = 2
     controlsFrame.Parent = mainFrame
     
-    -- Start/Stop Monitoring Button
+    local controlsCorner = Instance.new("UICorner")
+    controlsCorner.CornerRadius = UDim.new(0, 6)
+    controlsCorner.Parent = controlsFrame
+    
+    local controlsStroke = Instance.new("UIStroke")
+    controlsStroke.Color = Color3.fromRGB(60, 60, 70)
+    controlsStroke.Thickness = 1
+    controlsStroke.Parent = controlsFrame
+    
+    -- Controls grid layout
+    local controlsGrid = Instance.new("UIGridLayout")
+    controlsGrid.Name = "ControlsGrid"
+    controlsGrid.CellSize = UDim2.new(0.48, 0, 0.45, 0)
+    controlsGrid.CellPadding = UDim2.new(0.02, 0, 0.02, 0)
+    controlsGrid.StartCorner = Enum.StartCorner.TopLeft
+    controlsGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    controlsGrid.VerticalAlignment = Enum.VerticalAlignment.Center
+    controlsGrid.Parent = controlsFrame
+    
+    -- Start/Stop Monitoring Button with icon
     local monitorButton = Instance.new("TextButton")
     monitorButton.Name = "MonitorButton"
-    monitorButton.Size = UDim2.new(0.3, 0, 0.35, 0)
-    monitorButton.Position = UDim2.new(0.02, 0, 0.1, 0)
-    monitorButton.BackgroundColor3 = Color3.fromRGB(41, 128, 185)
+    monitorButton.Size = UDim2.new(1, 0, 1, 0)
+    monitorButton.BackgroundColor3 = ACCENT_COLOR
     monitorButton.BorderSizePixel = 0
     monitorButton.Font = Enum.Font.GothamBold
-    monitorButton.Text = "Start Monitoring GUI Path"
-    monitorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    monitorButton.Text = "START MONITORING"
+    monitorButton.TextColor3 = TEXT_COLOR
     monitorButton.TextSize = 14
+    monitorButton.TextWrapped = true
+    monitorButton.ZIndex = 3
     monitorButton.Parent = controlsFrame
     
-    -- Clear Console Button
+    local monitorCorner = Instance.new("UICorner")
+    monitorCorner.CornerRadius = UDim.new(0, 4)
+    monitorCorner.Parent = monitorButton
+    
+    -- Clear Console Button with icon
     local clearButton = Instance.new("TextButton")
     clearButton.Name = "ClearButton"
-    clearButton.Size = UDim2.new(0.15, 0, 0.35, 0)
-    clearButton.Position = UDim2.new(0.33, 0, 0.1, 0)
+    clearButton.Size = UDim2.new(1, 0, 1, 0)
     clearButton.BackgroundColor3 = Color3.fromRGB(192, 57, 43)
     clearButton.BorderSizePixel = 0
     clearButton.Font = Enum.Font.GothamBold
-    clearButton.Text = "Clear"
-    clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    clearButton.Text = "CLEAR CONSOLE"
+    clearButton.TextColor3 = TEXT_COLOR
     clearButton.TextSize = 14
+    clearButton.TextWrapped = true
+    clearButton.ZIndex = 3
     clearButton.Parent = controlsFrame
+    
+    local clearCorner = Instance.new("UICorner")
+    clearCorner.CornerRadius = UDim.new(0, 4)
+    clearCorner.Parent = clearButton
+    
+    -- CoreGUI Toggle Container
+    local toggleContainer = Instance.new("Frame")
+    toggleContainer.Name = "ToggleContainer"
+    toggleContainer.Size = UDim2.new(1, 0, 1, 0)
+    toggleContainer.BackgroundTransparency = 1
+    toggleContainer.ZIndex = 3
+    toggleContainer.Parent = controlsFrame
     
     -- CoreGUI Toggle Label
     local coreGuiLabel = Instance.new("TextLabel")
     coreGuiLabel.Name = "CoreGuiLabel"
-    coreGuiLabel.Size = UDim2.new(0.4, 0, 0.35, 0)
-    coreGuiLabel.Position = UDim2.new(0.02, 0, 0.55, 0)
+    coreGuiLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    coreGuiLabel.Position = UDim2.new(0, 0, 0, 0)
     coreGuiLabel.BackgroundTransparency = 1
     coreGuiLabel.Font = Enum.Font.GothamMedium
-    coreGuiLabel.Text = "Enable CoreGui Path Monitoring:"
-    coreGuiLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    coreGuiLabel.Text = "CoreGUI Monitoring:"
+    coreGuiLabel.TextColor3 = TEXT_COLOR
     coreGuiLabel.TextSize = 14
     coreGuiLabel.TextXAlignment = Enum.TextXAlignment.Left
-    coreGuiLabel.Parent = controlsFrame
+    coreGuiLabel.ZIndex = 3
+    coreGuiLabel.Parent = toggleContainer
     
-    -- Toggle Slider Background
-    local sliderBackground = Instance.new("Frame")
-    sliderBackground.Name = "SliderBackground"
-    sliderBackground.Size = UDim2.new(0.12, 0, 0.25, 0)
-    sliderBackground.Position = UDim2.new(0.43, 0, 0.6, 0)
-    sliderBackground.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    sliderBackground.BorderSizePixel = 0
-    sliderBackground.Parent = controlsFrame
+    -- Premium toggle switch
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Name = "ToggleFrame"
+    toggleFrame.Size = UDim2.new(0.35, 0, 0.5, 0)
+    toggleFrame.Position = UDim2.new(0.65, 0, 0.25, 0)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.ZIndex = 3
+    toggleFrame.Parent = toggleContainer
     
-    local sliderCorners = Instance.new("UICorner")
-    sliderCorners.CornerRadius = UDim.new(0.5, 0)
-    sliderCorners.Parent = sliderBackground
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0.5, 0)
+    toggleCorner.Parent = toggleFrame
     
-    -- Toggle Slider Button
-    local sliderButton = Instance.new("Frame")
-    sliderButton.Name = "SliderButton"
-    sliderButton.Size = UDim2.new(0.4, 0, 0.8, 0)
-    sliderButton.Position = UDim2.new(0.05, 0, 0.1, 0)
-    sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    sliderButton.BorderSizePixel = 0
-    sliderButton.Parent = sliderBackground
+    local toggleButton = Instance.new("Frame")
+    toggleButton.Name = "ToggleButton"
+    toggleButton.Size = UDim2.new(0.45, 0, 0.8, 0)
+    toggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+    toggleButton.BorderSizePixel = 0
+    toggleButton.ZIndex = 4
+    toggleButton.Parent = toggleFrame
     
-    local buttonCorners = Instance.new("UICorner")
-    buttonCorners.CornerRadius = UDim.new(0.5, 0)
-    buttonCorners.Parent = sliderButton
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0.5, 0)
+    buttonCorner.Parent = toggleButton
     
-    -- Make the main frame draggable
+    -- Button hover effects for control buttons
+    setupButtonHover(monitorButton, Color3.fromRGB(0, 190, 255))
+    setupButtonHover(clearButton, Color3.fromRGB(210, 77, 63))
+    
+    -- Make the main container draggable with touch support
     local isDragging = false
-    local dragOffset = Vector2.new(0, 0)
+    local dragStartPos, frameStartPos
+    
+    local function updateDrag(input)
+        local delta = input.Position - dragStartPos
+        mainContainer.Position = UDim2.new(
+            frameStartPos.X.Scale, 
+            frameStartPos.X.Offset + delta.X,
+            frameStartPos.Y.Scale, 
+            frameStartPos.Y.Offset + delta.Y
+        )
+    end
     
     topBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
+            input.UserInputType == Enum.UserInputType.Touch) and
+            not isDragging then
+            
             isDragging = true
-            dragOffset = mainFrame.Position - UDim2.new(0, input.Position.X, 0, input.Position.Y)
-        end
-    end)
-    
-    topBar.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = false
+            dragStartPos = input.Position
+            frameStartPos = mainContainer.Position
+            
+            -- Capture the input to track movement outside the frame
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    isDragging = false
+                end
+            end)
         end
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            mainFrame.Position = UDim2.new(0, input.Position.X, 0, input.Position.Y) + dragOffset
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or 
+                           input.UserInputType == Enum.UserInputType.Touch) then
+            updateDrag(input)
         end
     end)
     
-    -- Create confirmation modal
+    -- Create confirmation modal with animation
     local modalBackground = Instance.new("Frame")
     modalBackground.Name = "ConfirmationModal"
-    modalBackground.Size = UDim2.new(10, 0, 10, 0)
-    modalBackground.Position = UDim2.new(-5, 0, -5, 0)
+    modalBackground.Size = UDim2.new(1, 0, 1, 0)
+    modalBackground.Position = UDim2.new(0, 0, 0, 0)
     modalBackground.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    modalBackground.BackgroundTransparency = 0.5
+    modalBackground.BackgroundTransparency = 0.7
     modalBackground.BorderSizePixel = 0
     modalBackground.Visible = false
     modalBackground.ZIndex = 10
@@ -255,9 +482,9 @@ local function createMonitorGui(player)
     
     local modalFrame = Instance.new("Frame")
     modalFrame.Name = "ModalFrame"
-    modalFrame.Size = UDim2.new(0.3, 0, 0.2, 0)
-    modalFrame.Position = UDim2.new(0.35, 0, 0.4, 0)
-    modalFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    modalFrame.Size = UDim2.new(0.25, 0, 0.18, 0)
+    modalFrame.Position = UDim2.new(0.375, 0, 0.41, 0)
+    modalFrame.BackgroundColor3 = DARK_BG
     modalFrame.BorderSizePixel = 0
     modalFrame.ZIndex = 11
     modalFrame.Parent = modalBackground
@@ -266,86 +493,174 @@ local function createMonitorGui(player)
     modalCorners.CornerRadius = UDim.new(0.05, 0)
     modalCorners.Parent = modalFrame
     
+    local modalStroke = Instance.new("UIStroke")
+    modalStroke.Color = ACCENT_COLOR
+    modalStroke.Thickness = 2
+    modalStroke.Parent = modalFrame
+    
     local modalTitle = Instance.new("TextLabel")
     modalTitle.Name = "ModalTitle"
-    modalTitle.Size = UDim2.new(1, 0, 0.3, 0)
-    modalTitle.Position = UDim2.new(0, 0, 0.1, 0)
+    modalTitle.Size = UDim2.new(0.9, 0, 0.4, 0)
+    modalTitle.Position = UDim2.new(0.05, 0, 0.1, 0)
     modalTitle.BackgroundTransparency = 1
     modalTitle.Font = Enum.Font.GothamBold
-    modalTitle.Text = "Are you sure you want to close?"
-    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    modalTitle.Text = "Close UILenS?"
+    modalTitle.TextColor3 = TEXT_COLOR
     modalTitle.TextSize = 18
+    modalTitle.TextWrapped = true
     modalTitle.ZIndex = 11
     modalTitle.Parent = modalFrame
     
+    local modalMessage = Instance.new("TextLabel")
+    modalMessage.Name = "ModalMessage"
+    modalMessage.Size = UDim2.new(0.9, 0, 0.3, 0)
+    modalMessage.Position = UDim2.new(0.05, 0, 0.4, 0)
+    modalMessage.BackgroundTransparency = 1
+    modalMessage.Font = Enum.Font.GothamMedium
+    modalMessage.Text = "This will completely remove the UI monitor from your game."
+    modalMessage.TextColor3 = TEXT_COLOR
+    modalMessage.TextSize = 14
+    modalMessage.TextWrapped = true
+    modalMessage.ZIndex = 11
+    modalMessage.Parent = modalFrame
+    
+    local buttonContainer = Instance.new("Frame")
+    buttonContainer.Name = "ButtonContainer"
+    buttonContainer.Size = UDim2.new(0.9, 0, 0.3, 0)
+    buttonContainer.Position = UDim2.new(0.05, 0, 0.65, 0)
+    buttonContainer.BackgroundTransparency = 1
+    buttonContainer.ZIndex = 11
+    buttonContainer.Parent = modalFrame
+    
     local cancelButton = Instance.new("TextButton")
     cancelButton.Name = "CancelButton"
-    cancelButton.Size = UDim2.new(0.4, 0, 0.25, 0)
-    cancelButton.Position = UDim2.new(0.1, 0, 0.6, 0)
-    cancelButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    cancelButton.Size = UDim2.new(0.45, 0, 0.9, 0)
+    cancelButton.Position = UDim2.new(0, 0, 0, 0)
+    cancelButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
     cancelButton.BorderSizePixel = 0
     cancelButton.Font = Enum.Font.GothamBold
-    cancelButton.Text = "Cancel"
-    cancelButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    cancelButton.TextSize = 16
-    cancelButton.ZIndex = 11
-    cancelButton.Parent = modalFrame
+    cancelButton.Text = "CANCEL"
+    cancelButton.TextColor3 = TEXT_COLOR
+    cancelButton.TextSize = 14
+    cancelButton.ZIndex = 12
+    cancelButton.Parent = buttonContainer
+    
+    local cancelCorner = Instance.new("UICorner")
+    cancelCorner.CornerRadius = UDim.new(0.1, 0)
+    cancelCorner.Parent = cancelButton
     
     local confirmButton = Instance.new("TextButton")
     confirmButton.Name = "ConfirmButton"
-    confirmButton.Size = UDim2.new(0.4, 0, 0.25, 0)
-    confirmButton.Position = UDim2.new(0.5, 0, 0.6, 0)
+    confirmButton.Size = UDim2.new(0.45, 0, 0.9, 0)
+    confirmButton.Position = UDim2.new(0.55, 0, 0, 0)
     confirmButton.BackgroundColor3 = Color3.fromRGB(192, 57, 43)
     confirmButton.BorderSizePixel = 0
     confirmButton.Font = Enum.Font.GothamBold
-    confirmButton.Text = "Yes"
-    confirmButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    confirmButton.TextSize = 16
-    confirmButton.ZIndex = 11
-    confirmButton.Parent = modalFrame
+    confirmButton.Text = "CONFIRM"
+    confirmButton.TextColor3 = TEXT_COLOR
+    confirmButton.TextSize = 14
+    confirmButton.ZIndex = 12
+    confirmButton.Parent = buttonContainer
     
-    local cancelCorners = Instance.new("UICorner")
-    cancelCorners.CornerRadius = UDim.new(0.1, 0)
-    cancelCorners.Parent = cancelButton
+    local confirmCorner = Instance.new("UICorner")
+    confirmCorner.CornerRadius = UDim.new(0.1, 0)
+    confirmCorner.Parent = confirmButton
     
-    local confirmCorners = Instance.new("UICorner")
-    confirmCorners.CornerRadius = UDim.new(0.1, 0)
-    confirmCorners.Parent = confirmButton
+    -- Button hover effects for modal
+    setupButtonHover(cancelButton, Color3.fromRGB(90, 90, 100))
+    setupButtonHover(confirmButton, Color3.fromRGB(210, 77, 63))
     
-    -- Button Logic
-    closeButton.MouseButton1Click:Connect(function()
+    -- Modal animation
+    local function showModal()
         modalBackground.Visible = true
-    end)
+        modalFrame.Size = UDim2.new(0.1, 0, 0.1, 0)
+        modalFrame.Position = UDim2.new(0.45, 0, 0.45, 0)
+        modalFrame.BackgroundTransparency = 1
+        
+        local sizeTween = TweenService:Create(
+            modalFrame,
+            TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0.25, 0, 0.18, 0)}
+        )
+        
+        local transparencyTween = TweenService:Create(
+            modalFrame,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundTransparency = 0}
+        )
+        
+        sizeTween:Play()
+        transparencyTween:Play()
+    end
     
-    cancelButton.MouseButton1Click:Connect(function()
+    local function hideModal()
+        local sizeTween = TweenService:Create(
+            modalFrame,
+            TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+            {Size = UDim2.new(0.1, 0, 0.1, 0)}
+        )
+        
+        local transparencyTween = TweenService:Create(
+            modalFrame,
+            TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundTransparency = 1}
+        )
+        
+        sizeTween:Play()
+        transparencyTween:Play()
+        
+        sizeTween.Completed:Wait()
         modalBackground.Visible = false
-    end)
+    end
+    
+    -- Button Logic with animations
+    closeButton.MouseButton1Click:Connect(showModal)
+    
+    cancelButton.MouseButton1Click:Connect(hideModal)
     
     confirmButton.MouseButton1Click:Connect(function()
-        mainFrame.Visible = false
-        modalBackground.Visible = false
+        hideModal()
+        
+        -- Fade out animation before destruction
+        local fadeTween = TweenService:Create(
+            mainContainer,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundTransparency = 1}
+        )
+        
+        fadeTween:Play()
+        fadeTween.Completed:Wait()
+        
+        -- Completely remove the GUI
+        screenGui:Destroy()
     end)
     
+    -- Minimize functionality with animation
     minimizeButton.MouseButton1Click:Connect(function()
         if mainFrame.Size.Y.Scale > 0.1 then
+            -- Store original size
             mainFrame:SetAttribute("OriginalSizeY", mainFrame.Size.Y.Scale)
             mainFrame:SetAttribute("OriginalSizeX", mainFrame.Size.X.Scale)
             
+            -- Animate minimize
             local minimizeTween = TweenService:Create(
                 mainFrame,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0.6, 0, 0.07, 0)}
+                {Size = UDim2.new(0.6, 0, 0.08, 0)}
             )
             minimizeTween:Play()
             
+            -- Hide all children except top bar
             for _, child in pairs(mainFrame:GetChildren()) do
                 if child.Name ~= "TopBar" then
                     child.Visible = false
                 end
             end
             
-            minimizeButton.Text = "+"
+            -- Change icon to maximize
+            minimizeButton.ImageRectOffset = Vector2.new(84, 204)
         else
+            -- Animate restore
             local maximizeTween = TweenService:Create(
                 mainFrame,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
@@ -358,64 +673,139 @@ local function createMonitorGui(player)
             )
             maximizeTween:Play()
             
+            -- Show all children
             for _, child in pairs(mainFrame:GetChildren()) do
                 child.Visible = true
             end
             
-            minimizeButton.Text = "-"
+            -- Change icon back to minimize
+            minimizeButton.ImageRectOffset = Vector2.new(124, 204)
         end
     end)
     
+    -- Monitor button functionality with animation
     monitorButton.MouseButton1Click:Connect(function()
         MONITOR_ENABLED = not MONITOR_ENABLED
         
         if MONITOR_ENABLED then
-            monitorButton.Text = "Stop Monitoring GUI Path"
-            monitorButton.BackgroundColor3 = Color3.fromRGB(192, 57, 43)
+            -- Animate button change
+            local colorTween = TweenService:Create(
+                monitorButton,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = Color3.fromRGB(46, 204, 113)}
+            )
+            colorTween:Play()
+            
+            -- Update status
+            monitorButton.Text = "STOP MONITORING"
             statusLabel.Text = "Monitoring: ON"
-            statusLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+            
+            -- Animate status indicator
+            local indicatorTween = TweenService:Create(
+                statusIndicator,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = Color3.fromRGB(46, 204, 113)}
+            )
+            indicatorTween:Play()
         else
-            monitorButton.Text = "Start Monitoring GUI Path"
-            monitorButton.BackgroundColor3 = Color3.fromRGB(41, 128, 185)
+            -- Animate button change
+            local colorTween = TweenService:Create(
+                monitorButton,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = ACCENT_COLOR}
+            )
+            colorTween:Play()
+            
+            -- Update status
+            monitorButton.Text = "START MONITORING"
             statusLabel.Text = "Monitoring: OFF"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+            
+            -- Animate status indicator
+            local indicatorTween = TweenService:Create(
+                statusIndicator,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = Color3.fromRGB(255, 100, 100)}
+            )
+            indicatorTween:Play()
         end
     end)
     
+    -- Clear button functionality with animation
     clearButton.MouseButton1Click:Connect(function()
-        for _, child in pairs(consoleScrollFrame:GetChildren()) do
-            if child:IsA("TextLabel") then
-                child:Destroy()
+        -- Pulse animation
+        local pulseOut = TweenService:Create(
+            clearButton,
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0.95, 0, 0.95, 0)}
+        )
+        
+        local pulseIn = TweenService:Create(
+            clearButton,
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(1, 0, 1, 0)}
+        )
+        
+        pulseOut:Play()
+        pulseOut.Completed:Connect(function()
+            pulseIn:Play()
+            
+            -- Clear console messages
+            for _, child in pairs(consoleScrollFrame:GetChildren()) do
+                if child:IsA("TextLabel") then
+                    child:Destroy()
+                end
             end
-        end
+        end)
     end)
     
-    local function updateSliderAppearance()
+    -- Premium toggle switch functionality
+    local function updateToggleAppearance()
         if CORE_GUI_MONITORING then
-            sliderBackground.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+            -- Animate toggle on
             local slideTween = TweenService:Create(
-                sliderButton,
+                toggleButton,
                 TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Position = UDim2.new(0.525, 0, 0.05, 0)}
+                {Position = UDim2.new(0.5, 0, 0.1, 0)}
             )
+            
+            local colorTween = TweenService:Create(
+                toggleFrame,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = Color3.fromRGB(46, 204, 113)}
+            )
+            
             slideTween:Play()
+            colorTween:Play()
         else
-            sliderBackground.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            -- Animate toggle off
             local slideTween = TweenService:Create(
-                sliderButton,
+                toggleButton,
                 TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Position = UDim2.new(0.025, 0, 0.05, 0)}
+                {Position = UDim2.new(0.05, 0, 0.1, 0)}
             )
+            
+            local colorTween = TweenService:Create(
+                toggleFrame,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = Color3.fromRGB(70, 70, 80)}
+            )
+            
             slideTween:Play()
+            colorTween:Play()
         end
     end
     
-    sliderBackground.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+    toggleFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
+            
             CORE_GUI_MONITORING = not CORE_GUI_MONITORING
-            updateSliderAppearance()
+            updateToggleAppearance()
         end
     end)
+    
+    -- Initialize toggle appearance
+    updateToggleAppearance()
     
     return {
         gui = screenGui,
@@ -440,17 +830,32 @@ local function getElementPath(element)
     return table.concat(path, ".")
 end
 
--- Add message to console
+-- Add message to console with animation
 local function addConsoleMessage(player, message, messageType)
     if not player or not player.PlayerGui then return end
     
     local consoleScrollFrame = player.PlayerGui:FindFirstChild(MAIN_GUI_NAME)
     if not consoleScrollFrame then return end
-    consoleScrollFrame = consoleScrollFrame.MainFrame.ConsoleFrame.ConsoleScrollFrame
+    consoleScrollFrame = consoleScrollFrame.MainContainer.MainFrame.ConsoleFrame.ConsoleScrollFrame
+    
+    local messageContainer = Instance.new("Frame")
+    messageContainer.Name = "Message_" .. HttpService:GenerateGUID(false)
+    messageContainer.Size = UDim2.new(0.98, 0, 0, 0)
+    messageContainer.AutomaticSize = Enum.AutomaticSize.Y
+    messageContainer.BackgroundTransparency = 1
+    messageContainer.LayoutOrder = os.time()
+    messageContainer.Parent = consoleScrollFrame
+    
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, 5)
+    padding.PaddingRight = UDim.new(0, 5)
+    padding.PaddingTop = UDim.new(0, 5)
+    padding.PaddingBottom = UDim.new(0, 5)
+    padding.Parent = messageContainer
     
     local messageLabel = Instance.new("TextLabel")
-    messageLabel.Name = "Message_" .. os.time() .. "_" .. math.random(1000, 9999)
-    messageLabel.Size = UDim2.new(0.98, 0, 0, 40)
+    messageLabel.Name = "MessageLabel"
+    messageLabel.Size = UDim2.new(1, 0, 0, 0)
     messageLabel.AutomaticSize = Enum.AutomaticSize.Y
     messageLabel.BackgroundColor3 = 
         messageType == "click" and Color3.fromRGB(20, 40, 60) or
@@ -467,20 +872,38 @@ local function addConsoleMessage(player, message, messageType)
     messageLabel.TextWrapped = true
     messageLabel.TextXAlignment = Enum.TextXAlignment.Left
     messageLabel.TextYAlignment = Enum.TextYAlignment.Top
-    messageLabel.LayoutOrder = os.time()
+    messageLabel.Parent = messageContainer
     
-    local padding = Instance.new("UIPadding")
-    padding.PaddingLeft = UDim.new(0, 10)
-    padding.PaddingRight = UDim.new(0, 10)
-    padding.PaddingTop = UDim.new(0, 5)
-    padding.PaddingBottom = UDim.new(0, 5)
-    padding.Parent = messageLabel
+    local messageCorner = Instance.new("UICorner")
+    messageCorner.CornerRadius = UDim.new(0, 4)
+    messageCorner.Parent = messageLabel
     
-    messageLabel.Parent = consoleScrollFrame
+    local messagePadding = Instance.new("UIPadding")
+    messagePadding.PaddingLeft = UDim.new(0, 10)
+    messagePadding.PaddingRight = UDim.new(0, 10)
+    messagePadding.PaddingTop = UDim.new(0, 5)
+    messagePadding.PaddingBottom = UDim.new(0, 5)
+    messagePadding.Parent = messageLabel
     
+    -- Fade in animation
+    messageLabel.BackgroundTransparency = 1
+    messageLabel.TextTransparency = 1
+    
+    local fadeIn = TweenService:Create(
+        messageLabel,
+        TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {
+            BackgroundTransparency = 0,
+            TextTransparency = 0
+        }
+    )
+    
+    fadeIn:Play()
+    
+    -- Limit number of messages
     local messages = {}
     for _, child in pairs(consoleScrollFrame:GetChildren()) do
-        if child:IsA("TextLabel") then
+        if child:IsA("Frame") then
             table.insert(messages, child)
         end
     end
@@ -491,11 +914,25 @@ local function addConsoleMessage(player, message, messageType)
     
     if #messages > MAX_CONSOLE_MESSAGES then
         for i = MAX_CONSOLE_MESSAGES + 1, #messages do
-            messages[i]:Destroy()
+            -- Fade out before destroying
+            local fadeOut = TweenService:Create(
+                messages[i],
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {
+                    BackgroundTransparency = 1,
+                    TextTransparency = 1
+                }
+            )
+            
+            fadeOut:Play()
+            fadeOut.Completed:Connect(function()
+                messages[i]:Destroy()
+            end)
         end
     end
     
-    consoleScrollFrame.CanvasPosition = Vector2.new(0, 999999)
+    -- Auto-scroll to bottom
+    consoleScrollFrame.CanvasPosition = Vector2.new(0, consoleScrollFrame.AbsoluteCanvasSize.Y)
 end
 
 -- Check if an element should be ignored
@@ -534,8 +971,8 @@ local function setupClickMonitoring(player)
     local guiData = createMonitorGui(player)
     if not guiData then return end
     
-    addConsoleMessage(player, "Welcome to UILenS - GUI Path Monitor", "info")
-    addConsoleMessage(player, "Click the 'Start Monitoring GUI Path' button to begin tracking GUI interactions", "info")
+    addConsoleMessage(player, "Welcome to UILenS - Premium GUI Path Monitor", "info")
+    addConsoleMessage(player, "Click the 'START MONITORING' button to begin tracking GUI interactions", "info")
     
     local function handleGuiObject(guiObject)
         if not guiObject:IsA("GuiObject") or shouldIgnoreElement(guiObject) then
@@ -554,7 +991,8 @@ local function setupClickMonitoring(player)
                     
                     local pathStr = getElementPath(guiObject)
                     local clickMessage = string.format(
-                        "Clicked [ :// %s :\\ }\nPath: %s", 
+                        "[%s] Click detected on %s\nPath: %s", 
+                        os.date("%H:%M:%S"),
                         guiObject.ClassName,
                         pathStr
                     )
